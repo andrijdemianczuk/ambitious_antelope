@@ -5,4 +5,4 @@ Ambitious Antelope is a project designed to bootstrap data mining for IHS Markit
 This is the introduction area
 
 ## Datasources
-All data is sourced from RapidAPI
+All test data is sourced from RapidAPI.com under the respective dataset distribution terms, licenses and agreements
