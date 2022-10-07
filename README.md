@@ -6,3 +6,4 @@ This is the introduction area
 
 ## Datasources
 All test data is sourced from RapidAPI.com under the respective dataset distribution terms, licenses and agreements
+World Data API: https://rapidapi.com/jonaskoscielny/api/live-world-data
