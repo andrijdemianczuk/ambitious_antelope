@@ -10,8 +10,15 @@ headers = {
 
 response = requests.request("GET", url, headers=headers)
 
-print(response.text)
+# COMMAND ----------
+
+df = spark.read.json(sc.parallelize([response.text]))
+df.show(truncate=False)
 
 # COMMAND ----------
 
-df = response.text
+display(df)
+
+# COMMAND ----------
+
+
