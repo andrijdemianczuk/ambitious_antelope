@@ -4,6 +4,21 @@ Ambitious Antelope is a project designed to bootstrap data mining for IHS Markit
 ## Introduction
 This is the introduction area
 
-## Datasources
-All test data is sourced from RapidAPI.com under the respective dataset distribution terms, licenses and agreements
-World Data API: https://rapidapi.com/jonaskoscielny/api/live-world-data
+## Datasources & Agreements
+All test data is sourced from RapidAPI.com under the respective dataset distribution terms, licenses and agreements.
+
+## Getting Started
+The Ambitious Antelope project is comprised of several notebooks and scripts to defined and execute the pipelines required for ETL of the data and storage within a Delta format. This project is intended to be run within the Databricks Runtime (www.databricks.com)
+
+## Directory Structure Of This Repo
+This repo is broken into a couple of sub-categories to help keep work organized:
+
+Root: Used to home the individual components, README and EULA.
+<br/>|-- Projects: Used to home the individual project directories
+<br/>|--|-- Testing_Playgound: Used as a general sandbox, mostly for development. This is not production content.
+<br/>|--|-- Boundaries_IO_Production: Used as a demonstration of a productionized process using the boundaries_io API call from RapidAPI
+<br/>|--|-- IHS_Production: Used as a pre-production delivery for S&P Global Markit IHS data
+
+### 1. Cloning this repo in a Databricks workspace
+### 2. Configuring and testing external API calls
+### 3. Modifying the notebooks to support the payload schema
