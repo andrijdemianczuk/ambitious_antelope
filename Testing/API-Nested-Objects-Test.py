@@ -112,6 +112,11 @@ display(coordinates_df)
 
 # COMMAND ----------
 
+#rename potentially damaging column names (e.g., with invalid characters in SQL)
+coordinates_df = coordinates_df.withColumnRenamed("h3-index", "h3index")
+
+# COMMAND ----------
+
 # MAGIC %md
 # MAGIC ### Build the properties dataframe
 
@@ -125,6 +130,11 @@ display(properties_df)
 
 # COMMAND ----------
 
+#rename potentially damaging column names (e.g., with invalid characters in SQL)
+properties_df = properties_df.withColumnRenamed("h3-index", "h3index")
+
+# COMMAND ----------
+
 # MAGIC %md
 # MAGIC ### Commit the split dataframes to delta tables
 
@@ -132,11 +142,6 @@ display(properties_df)
 
 #Create reference pointers to both dataframes. Tuples are immutable and more efficient than lists - use them if you're not modifying your collections further. Remember that the tuple is what's immutable, NOT the referenced object(s) - they can still be changed if need-be
 # df_tuple = (coordinates_df, properties_df)
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC **!!!!Below is still in dev**
 
 # COMMAND ----------
 
@@ -166,15 +171,20 @@ def update_delta_fs(df, params):
 
 # COMMAND ----------
 
-def create_delta_table(df):
+def create_delta_table(df, params):
+  
+  type = params["type"]
+  database = params["database"]
+  table_name = params["table_name"]
+  delta_loc = params["delta_loc"]
   
   if spark._jsparkSession.catalog().tableExists(database, table_name):
     
     print("table already exists..... appending data")
-    df.createOrReplaceTempView(f"vw_{ttype}")  
+    df.createOrReplaceTempView(f"vw_{type}")  
     
-    spark.sql(f"MERGE INTO {database}.{table_name} USING vw_{ttype} \
-      ON vw_{ttype}.h3-index = {database}.{table_name}.h3-index \
+    spark.sql(f"MERGE INTO {database}.{table_name} USING vw_{type} \
+      ON vw_{type}.h3index = {database}.{table_name}.h3index \
       WHEN MATCHED THEN UPDATE SET * WHEN NOT MATCHED THEN INSERT *")
   
   else:
@@ -185,5 +195,15 @@ def create_delta_table(df):
 
 # COMMAND ----------
 
-update_delta_fs(coordinates_df, init_props("coordinates"))
-update_delta_fs(properties_df, init_props("properties"))
+c_params = init_props("coordinates")
+p_params = init_props("properties")
+
+# COMMAND ----------
+
+update_delta_fs(coordinates_df, c_params)
+update_delta_fs(properties_df, p_params)
+
+# COMMAND ----------
+
+create_delta_table(coordinates_df, c_params)
+create_delta_table(properties_df, p_params)
