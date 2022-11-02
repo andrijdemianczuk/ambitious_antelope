@@ -15,19 +15,23 @@
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Our API call, returning a response object
+# MAGIC ## Design
+# MAGIC 
+# MAGIC The design we're going to use if fairly straightforward in this example. First, we're going to request a response body from an external API call. Once the response object comes back we'll need to de-serialize it before we can process it and organize the data within our Delta Lake. In so doing, we will first be writing the data to Delta Files in the cloud filesystem and then registering the files as a searchable Delta Table.
+# MAGIC <br/>
+# MAGIC <hr/>
+# MAGIC <img src="https://github.com/andrijdemianczuk/ambitious_antelope/raw/main/Projects/Boundaries_IO_Production/Databricks_call_to_API_example.jpg"/>
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC This is a __*development*__ notebook - in order to 'production-ize' this code we'll need to remove un-necessary functions (mostly displays, schema prints etc.)
+# MAGIC ## Our API call, returning a response object
 
 # COMMAND ----------
 
 import requests
 
 #In reality, we would probably have a list of zip codes to iterate through. Might tackle this later if time permits. Should be pretty easy to build an iterator.
-#url = "https://vanitysoft-boundaries-io-v1.p.rapidapi.com/rest/v1/public/carrierRoute/zipcode/20019"
 url = "https://vanitysoft-boundaries-io-v1.p.rapidapi.com/rest/v1/public/carrierRoute/zipcode/98122"
 
 querystring = {"resolution":"8"}
