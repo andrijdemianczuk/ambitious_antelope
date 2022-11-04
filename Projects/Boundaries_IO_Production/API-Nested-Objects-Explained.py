@@ -48,6 +48,36 @@ print(response.text)
 # COMMAND ----------
 
 # MAGIC %md
+# MAGIC ## Testing calling custom-defined modules for this project
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC More details on how to work with arbitrary files and loading encapsulated logic via Python Modules and objects can be found [here](https://docs.databricks.com/repos/work-with-notebooks-other-files.html#refactor-code)
+
+# COMMAND ----------
+
+# Print the Pytrhon path along with all of our locations included
+import sys
+print("\n".join(sys.path))
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC So it looks like `/Workspace/Repos/{User}/{Repo_Name}` is available as part of our Python path which is good. This means that we should be able to interface directly with files adjacent to this notebook, or with files elsewhere within our repository.
+
+# COMMAND ----------
+
+#Note that we can have several classes in a single library - DeltaMgr is the name of both the library and class we want to use.
+from Projects.Boundaries_IO_Production.DeltaMgr import DeltaMgr
+
+#test it out
+tmp = DeltaMgr.init_props()
+print(tmp)
+
+# COMMAND ----------
+
+# MAGIC %md
 # MAGIC ## De-serializing the object & exploding arrays
 
 # COMMAND ----------
@@ -159,70 +189,16 @@ properties_df = properties_df.withColumnRenamed("h3-index", "h3index")
 
 # COMMAND ----------
 
-#Create reference pointers to both dataframes. Tuples are immutable and more efficient than lists - use them if you're not modifying your collections further. Remember that the tuple is what's immutable, NOT the referenced object(s) - they can still be changed if need-be
-# df_tuple = (coordinates_df, properties_df)
+c_params = DeltaMgr.init_props("coordinates","b_carrier_coordinates", "ademianczuk", "dbfs:/FileStore/Users/andrij.demianczuk@databricks.com/tmp/CarrierRoutes/data/coordinates")
+p_params = DeltaMgr.init_props("properties","b_carrier_properties", "ademianczuk", "dbfs:/FileStore/Users/andrij.demianczuk@databricks.com/tmp/CarrierRoutes/data/parameters")
 
 # COMMAND ----------
 
-def init_props(type) -> dict:
-  return {
-    "delta_loc": f"dbfs:/FileStore/Users/andrij.demianczuk@databricks.com/tmp/CarrierRoutes/data/{type}",
-    "write_fmt": 'delta',
-    "table_name": f'b_carrier_{type}',
-    "write_mode": 'overwrite',
-    "type": type,
-    "database": "ademianczuk"
-  }
+DeltaMgr.update_delta_fs(coordinates_df, c_params)
+DeltaMgr.update_delta_fs(properties_df, p_params)
 
 # COMMAND ----------
 
-#DEBUG ONLY
-# spark.sql(f"DROP TABLE IF EXISTS {database}.{table_name}")
-# spark.sql("CREATE TABLE " + database + "."+ table_name + " USING DELTA LOCATION '" + delta_loc + "'")
-
-# COMMAND ----------
-
-def update_delta_fs(df, params):
-  df.write \
-  .format(params["write_fmt"]) \
-  .mode(params["write_mode"]) \
-  .save(params["delta_loc"])
-
-# COMMAND ----------
-
-def create_delta_table(df, params):
-  
-  type = params["type"]
-  database = params["database"]
-  table_name = params["table_name"]
-  delta_loc = params["delta_loc"]
-  
-  if spark._jsparkSession.catalog().tableExists(database, table_name):
-    
-    print("table already exists..... appending data")
-    df.createOrReplaceTempView(f"vw_{type}")  
-    
-    spark.sql(f"MERGE INTO {database}.{table_name} USING vw_{type} \
-      ON vw_{type}.h3index = {database}.{table_name}.h3index \
-      WHEN MATCHED THEN UPDATE SET * WHEN NOT MATCHED THEN INSERT *")
-  
-  else:
-    print("table does not exist..... creating a new one")
-    
-    # Write the data to its target.
-    spark.sql("CREATE TABLE " + database + "."+ table_name + " USING DELTA LOCATION '" + delta_loc + "'")
-
-# COMMAND ----------
-
-c_params = init_props("coordinates")
-p_params = init_props("properties")
-
-# COMMAND ----------
-
-update_delta_fs(coordinates_df, c_params)
-update_delta_fs(properties_df, p_params)
-
-# COMMAND ----------
-
-create_delta_table(coordinates_df, c_params)
-create_delta_table(properties_df, p_params)
+#We need to remember to pass the spark context into the function so it can be referenced within
+DeltaMgr.create_delta_table(coordinates_df, c_params, "h3index", spark)
+DeltaMgr.create_delta_table(properties_df, p_params, "h3index", spark)
