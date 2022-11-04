@@ -7,58 +7,7 @@
 # DBTITLE 1,Dependencies
 import requests
 from pyspark.sql.functions import explode
-
-# COMMAND ----------
-
-# DBTITLE 1,Supporting Functions
-def init_props(type) -> dict:
-    return {
-        "delta_loc": f"dbfs:/FileStore/Users/andrij.demianczuk@databricks.com/tmp/CarrierRoutes/data/{type}",
-        "write_fmt": "delta",
-        "table_name": f"b_carrier_{type}",
-        "write_mode": "overwrite",
-        "type": type,
-        "database": "ademianczuk",
-    }
-
-
-def update_delta_fs(df, params):
-    df.write.format(params["write_fmt"]).mode(params["write_mode"]).save(
-        params["delta_loc"]
-    )
-
-
-def create_delta_table(df, params):
-
-    type = params["type"]
-    database = params["database"]
-    table_name = params["table_name"]
-    delta_loc = params["delta_loc"]
-
-    if spark._jsparkSession.catalog().tableExists(database, table_name):
-
-        print("table already exists..... appending data")
-        df.createOrReplaceTempView(f"vw_{type}")
-
-        spark.sql(
-            f"MERGE INTO {database}.{table_name} USING vw_{type} \
-    ON vw_{type}.h3index = {database}.{table_name}.h3index \
-    WHEN MATCHED THEN UPDATE SET * WHEN NOT MATCHED THEN INSERT *"
-        )
-
-    else:
-        print("table does not exist..... creating a new one")
-
-        # Write the data to its target.
-        spark.sql(
-            "CREATE TABLE "
-            + database
-            + "."
-            + table_name
-            + " USING DELTA LOCATION '"
-            + delta_loc
-            + "'"
-        )
+from DeltaMgr import DeltaMgr
 
 # COMMAND ----------
 
@@ -129,13 +78,13 @@ properties_df = properties_df.withColumnRenamed("h3-index", "h3index")
 # COMMAND ----------
 
 #Create Parameters
-c_params = init_props("coordinates")
-p_params = init_props("properties")
+c_params = DeltaMgr.init_props("coordinates","b_carrier_coordinates", "ademianczuk", "dbfs:/FileStore/Users/andrij.demianczuk@databricks.com/tmp/CarrierRoutes/data/coordinates")
+p_params = DeltaMgr.init_props("properties","b_carrier_properties", "ademianczuk", "dbfs:/FileStore/Users/andrij.demianczuk@databricks.com/tmp/CarrierRoutes/data/parameters")
 
 #Update the Delta File System
-update_delta_fs(coordinates_df, c_params)
-update_delta_fs(properties_df, p_params)
+DeltaMgr.update_delta_fs(coordinates_df, c_params)
+DeltaMgr.update_delta_fs(properties_df, p_params)
 
 #Create Delta tables from the File System
-create_delta_table(coordinates_df, c_params)
-create_delta_table(properties_df, p_params)
+DeltaMgr.create_delta_table(coordinates_df, c_params, "h3index", spark)
+DeltaMgr.create_delta_table(properties_df, p_params, "h3index", spark)
