@@ -29,13 +29,25 @@
 
 # COMMAND ----------
 
+# MAGIC %md
+# MAGIC ### Testing with a public API
+# MAGIC For this example, we will be making a point of using a public API and API key. This API is available for limited general use [here](https://rapidapi.com/VanitySoft/api/boundaries-io-1/). You may need to register to access this API (limited to 50 calls/day at the free tier), but it serves as a good example. This API was selected because the response object contains nested JSON which is relevant to serve as an example of how to deal with multi-tiered payloads.
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ### Using common Python classes
+# MAGIC PySpark on Databricks includes a number of commonly used libraries pre-installed in [pipenv](https://pypi.org/project/pipenv/). We're going to make use of the requests module since it provides a simple way to invoke a request object that is sent off to the API endpoint. The response payload comes back as an object which we'll label as 'response'. The response object contains not only the payload itself but meta-information as well including important data on the success/failure of the call.
+
+# COMMAND ----------
+
 import requests
 
-#In reality, we would probably have a list of zip codes to iterate through. Might tackle this later if time permits. Should be pretty easy to build an iterator.
-url = "https://vanitysoft-boundaries-io-v1.p.rapidapi.com/rest/v1/public/carrierRoute/zipcode/98122"
 
+url = "https://vanitysoft-boundaries-io-v1.p.rapidapi.com/rest/v1/public/carrierRoute/zipcode/98122"
 querystring = {"resolution":"8"}
 
+#The headers typically include our authentication parameters. In reality, we would likely store these in the Databricks secrets scope rather than storing them in plain sight like this.
 headers = {
 	"X-RapidAPI-Key": "7f9e8c0e92msh2e17bd321b686d2p12ad5djsnf1c096a07ffb",
 	"X-RapidAPI-Host": "vanitysoft-boundaries-io-v1.p.rapidapi.com"
@@ -43,7 +55,38 @@ headers = {
 
 response = requests.request("GET", url, headers=headers, params=querystring)
 
+#Print the status code of the API call. We're looking for '200' here indicating that the response came back successfully from the API. The response object also contains stack trace info in the event of a failure for debugging purposes.
+print(response.status_code)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC <img src="https://www.pngall.com/wp-content/uploads/10/Attention-PNG-Free-Image.png" width=100 />
+# MAGIC <br/>
+# MAGIC 
+# MAGIC ### Using Databricks Secrets
+# MAGIC 
+# MAGIC Rather than exposing the API key in plain text like we do above, it might be preferred to use a [Databricks secret](https://docs.databricks.com/security/secrets/index.html) instead. This is a much more secure way to store and utilize sensitive parameters while working with code that's versioned with a code repository.
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ### Evaluating the response
+# MAGIC 
+# MAGIC Before we move on, let's have a quick look at the response payload. This will give us a good representation of what we are working with and how to best manage the data coming back. We can do this by simply printing the response text to a cell.
+
+# COMMAND ----------
+
 print(response.text)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC 
+# MAGIC Okay, so this response may look complicated, but it does tell us a few important things. 
+# MAGIC 1. First, the entire structure is more-or-less human-readable. We're not worrying about responses in byte code or anything like that which is good. 
+# MAGIC 1. Second we can see that the opening and closing tags are curly braces and sub-delimiters with square brackets which tells us there's a good likelihood this is well-formed JSON
+# MAGIC 1. This is presented as one large text object at this point which means we'll have to de-serialize this by the interpreter in order to convert it to readable JSON.
 
 # COMMAND ----------
 
@@ -54,6 +97,21 @@ print(response.text)
 
 # MAGIC %md
 # MAGIC More details on how to work with arbitrary files and loading encapsulated logic via Python Modules and objects can be found [here](https://docs.databricks.com/repos/work-with-notebooks-other-files.html#refactor-code)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC 
+# MAGIC <img src="https://duws858oznvmq.cloudfront.net/menskool_Blog_5da39a6f12.jpg" width=500 />
+# MAGIC 
+# MAGIC ### Code re-use
+# MAGIC 
+# MAGIC It's important to look for opportunites to re-use and abstract code that's common. One such function that is often used repeatedly is the process by which we write to our delta lake and create delta tables from those files in our cloud storage buckets. There are two ways we can abstract and encapsulate logic blocks into other files and repositories.
+# MAGIC 
+# MAGIC 1. Creating Python modules in packages for distribution via PyPi - this involves creating Python Egg files (the old way) or Python Wheel files (the new way) and either publishing them to a public/private Python package repo (or sideloading them directly at the cluster level) or...
+# MAGIC 2. Loading arbitrary files that are formatted as class libraries (which we'll be doing here.)
+# MAGIC 
+# MAGIC The point though is to re-use code that can be re-used for common functions as much as possible. We can do this with good coding practices and through the use of object references (which we'll see when we pass our spark context around).
 
 # COMMAND ----------
 
