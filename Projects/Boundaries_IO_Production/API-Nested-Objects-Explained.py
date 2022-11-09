@@ -102,7 +102,7 @@ print(response.text)
 
 # MAGIC %md
 # MAGIC 
-# MAGIC <img src="https://duws858oznvmq.cloudfront.net/menskool_Blog_5da39a6f12.jpg" width=500 />
+# MAGIC <!-- img src="https://duws858oznvmq.cloudfront.net/menskool_Blog_5da39a6f12.jpg" width=500 / -->
 # MAGIC 
 # MAGIC ### Code re-use
 # MAGIC 
@@ -112,6 +112,21 @@ print(response.text)
 # MAGIC 2. Loading arbitrary files that are formatted as class libraries (which we'll be doing here.)
 # MAGIC 
 # MAGIC The point though is to re-use code that can be re-used for common functions as much as possible. We can do this with good coding practices and through the use of object references (which we'll see when we pass our spark context around).
+# MAGIC <hr />
+# MAGIC <img src="https://github.com/andrijdemianczuk/ambitious_antelope/raw/main/Projects/Boundaries_IO_Production/Loading_Git_Python_Modules.jpg" width=1000/>
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC 
+# MAGIC ### Identifying our import locations
+# MAGIC 
+# MAGIC By printing our Python reference path variable, we can see all of the locations that the Python runtime has access to. Specifically we are looking for something along the lines of the following:
+# MAGIC 
+# MAGIC ```
+# MAGIC /Workspace/Repos/{databricks_user}/{Repo}/{Path_to_Project}
+# MAGIC /Workspace/Repos/{databricks_user}/{Repo}
+# MAGIC ```
 
 # COMMAND ----------
 
@@ -122,7 +137,28 @@ print("\n".join(sys.path))
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC So it looks like `/Workspace/Repos/{User}/{Repo_Name}` is available as part of our Python path which is good. This means that we should be able to interface directly with files adjacent to this notebook, or with files elsewhere within our repository.
+# MAGIC So it looks like `/Workspace/Repos/{databricks_user}/{Repo}` is available as part of our Python path which is good. This means that we should be able to interface directly with files adjacent to this notebook, or with files elsewhere within our repository.
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ### Importing modules from other repos to work with directly
+# MAGIC It's also important to note that your modules don't necessarily have to exist in the same repo as the databricks notebook and function reference within Git. You can easily add repo locations to your Python path with the following example block of code:
+# MAGIC ```python
+# MAGIC import sys
+# MAGIC import os
+# MAGIC  
+# MAGIC # In the command below, replace <username> with your Databricks user name.
+# MAGIC sys.path.append(os.path.abspath('/Workspace/Repos/<username>/supplemental_files'))
+# MAGIC  
+# MAGIC # You can now import Python modules from the supplemental_files repo.
+# MAGIC # import lib
+# MAGIC ```
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC So let's import our Delta Manager class which will help us when managing our delta files and tables. We're just going to invoke the `init_props()` function as a test because it doesn't require any input parameters.
 
 # COMMAND ----------
 
@@ -136,7 +172,23 @@ print(tmp)
 # COMMAND ----------
 
 # MAGIC %md
+# MAGIC Now that we know that we have our class library available to us to help with Delta file and table management, we can continue working on the API response object.
+
+# COMMAND ----------
+
+# MAGIC %md
 # MAGIC ## De-serializing the object & exploding arrays
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ### De-serializing the response object
+# MAGIC 
+# MAGIC **Deserialization is the process of reconstructing a data structure or object from a series of bytes or a string in order to instantiate the object for consumption. This is the reverse process of serialization, i.e., converting a data structure or object into a series of bytes for storage or transmission across devices.** Since we have our response payload as a text attribute of the response object, we'll need to de-serialize it for use and submit it to Spark to do it's thing. Spark will take take the input and properly distribute it across the RDD in scope for the Spark Context. Fortunately for us, this can all be done with two commands that are concatenated in a single line.
+# MAGIC <br />
+# MAGIC <br />
+# MAGIC * spark.read.json() will deserialize the string response back into a JSON-typed object
+# MAGIC * sc.parallelize() will handle the distribution of the object across the RDD. This is represented by a dataframe that's instanciated to represent the data structure.
 
 # COMMAND ----------
 
@@ -145,10 +197,29 @@ df = spark.read.json(sc.parallelize([response.text]))
 
 # COMMAND ----------
 
+# MAGIC %md
+# MAGIC ### Handling arrays
+# MAGIC Working with arrays in the context of dataframes is pretty straightforward. All we need is a pyspark function called `explode` which will handle all of the column mapping for us. Arrays are a bit looser in terms of structure than structs (which are essentially pseudo objects) so we can leverage built-in functionality to help us manage them and map them properly.
+# MAGIC 
+# MAGIC There are a couple of types of maps we can apply to arrays to get the desired effect:
+# MAGIC * explode() - ignores any elements that are null or empty (e.g.,[])
+# MAGIC * explore_outer() - returns `null` for elements that are null or empty
+# MAGIC * posexplode() - similar to `explode` but also contains information about the element's position in the array or map
+# MAGIC * posexplode_outer() - similar to `explode_outer` but also contains information about the element's position in the array or map
+# MAGIC 
+# MAGIC For the sake of our needs, we only need the `explode()` function. For more details on row mapping and managing null values using the other three functions, documentation and a good explanation can be found [here](https://sparkbyexamples.com/pyspark/pyspark-explode-array-and-map-columns-to-rows/).
+
+# COMMAND ----------
+
 from pyspark.sql.functions import explode
 
 #Pull and explode the array column labeled 'features'
 df = df.select(explode(df.features))
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC Now when we look at the resulting schema of our dataframe we can see that we've blown out our 'features' column (which only contains a single element called 'col') into a column with distinct rows for each entry.
 
 # COMMAND ----------
 
@@ -169,7 +240,14 @@ display(df.head(1))
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC **Dealing with structs is fairly straightforward, but since they're strongly-typed we can use a start-select as a simple iterator to blow out the columns.**
+# MAGIC Looking at our dataframe now, we can see that our root element is a struct that contains three child elements:
+# MAGIC - Geometry: contains all of our polygon coordinates
+# MAGIC - Properties: contains all of our carrier route data
+# MAGIC - Type: a simple label for the data point (we're not going to use this column so we'll drop it when we create our new version of the dataframe)
+# MAGIC 
+# MAGIC We want to map these three columns to a new version of the dataframe which is pretty easy to do with a star-select command on the dataframe columns.
+# MAGIC 
+# MAGIC **Dealing with structs is fairly straightforward, but since they're strongly-typed we can use a star-select as a simple iterator to map the columns.**
 
 # COMMAND ----------
 
@@ -190,6 +268,7 @@ display(df)
 # COMMAND ----------
 
 # MAGIC %md
+# MAGIC ### Analyzing the resulting dataframe
 # MAGIC **So now we have a clear idea of how we're going to bifurcate our logic; one branch will be for mapping coordinates, the other will be for the route summaries**
 
 # COMMAND ----------
@@ -260,3 +339,10 @@ DeltaMgr.update_delta_fs(properties_df, p_params)
 #We need to remember to pass the spark context into the function so it can be referenced within
 DeltaMgr.create_delta_table(coordinates_df, c_params, "h3index", spark)
 DeltaMgr.create_delta_table(properties_df, p_params, "h3index", spark)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## Delta Manager Reference
+# MAGIC 
+# MAGIC The Delta Manager class has four functions that facilitate use of the object. Once imported, all are available for general purpose.
