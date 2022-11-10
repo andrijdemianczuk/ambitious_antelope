@@ -434,19 +434,98 @@ DeltaMgr.create_delta_table(properties_df, p_params, "h3index", spark)
 
 # COMMAND ----------
 
-from delta.tables import *
-
-#Optimize (compact small files) the coordinates table
-deltaTable = DeltaTable.forName(spark, "b_carrier_coordinates")
-deltaTable.optimize().executeCompaction()
-
-#Optimize (compact small files) the properties table
-deltaTable = DeltaTable.forName(spark, "b_carrier_properties")
-deltaTable.optimize().executeCompaction()
+# MAGIC %md
+# MAGIC ## Delta Manager Reference
+# MAGIC 
+# MAGIC The Delta Manager class has three functions that facilitate use of the object. Once imported, all are available for general purpose.
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Delta Manager Reference
+# MAGIC #### Importing the class for use
+# MAGIC ```python
+# MAGIC #Discrete path relative to repo root
+# MAGIC from Projects.Boundaries_IO_Production.DeltaMgr import DeltaMgr
 # MAGIC 
-# MAGIC The Delta Manager class has four functions that facilitate use of the object. Once imported, all are available for general purpose.
+# MAGIC #Or relative to this notebook
+# MAGIC from DeltaMgr import DeltaMgr
+# MAGIC ```
+# MAGIC 
+# MAGIC Once imported, the `DeltaMgr` object is in scope and available for use.
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC 
+# MAGIC #### DeltaMgr.InitProps()
+# MAGIC Used to build a collection to hold the delta properties
+# MAGIC 
+# MAGIC Usage:
+# MAGIC ```
+# MAGIC variable_name = DeltaMgr.init_props("type":String, "table_name":String, "database":String, "delta_location":String)
+# MAGIC ```
+# MAGIC 
+# MAGIC | variable | data type | required | default value | description |
+# MAGIC | ----------- | ----------- |----------- |----------- |----------- |
+# MAGIC | type | String | no | "default" | A type identifier used when managing several dataframes |
+# MAGIC | table_name | String | no | "default" | The name of the table to be written |
+# MAGIC | database | String | no | "default" | The database name where the table will be created |
+# MAGIC | delta_location | String | no | "/FileStore/Users/tmp" | The path where the delta files will be written |
+# MAGIC 
+# MAGIC Example:
+# MAGIC 
+# MAGIC ```python
+# MAGIC c_params = DeltaMgr.init_props("ipsum","bronze_lorem", "foo", "dbfs:/FileStore/Users/foo/bar/coordinates")
+# MAGIC ```
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC 
+# MAGIC #### DeltaMgr.update_delta_fs(df, params)
+# MAGIC 
+# MAGIC Used to write a dataframe to the delta location of choice
+# MAGIC 
+# MAGIC Usage:
+# MAGIC 
+# MAGIC ```python
+# MAGIC DeltaMgr.update_delta_fs(df, <parameter_dictionary>)
+# MAGIC ```
+# MAGIC 
+# MAGIC | variable | data type | required | default value | description |
+# MAGIC | ----------- | ----------- |----------- |----------- |----------- |
+# MAGIC | df | Dataframe | yes | "" | The dataframe to be written to the delta file system |
+# MAGIC | params | Dictionary | yes | "" | The data dictionary containing the configuration parameters [type, table_name, database, delta_location] |
+# MAGIC 
+# MAGIC Example:
+# MAGIC 
+# MAGIC ```python
+# MAGIC DeltaMgr.update_delta_fs(df, c_params)
+# MAGIC ```
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC 
+# MAGIC #### DeltaMgr.create_delta_table(df, params, match_col, spark)
+# MAGIC 
+# MAGIC Used to register a Delta location as a Delta Table in the current metastore
+# MAGIC 
+# MAGIC Usage:
+# MAGIC 
+# MAGIC ```python
+# MAGIC DeltaMgr.create_delta_table(df, <parameter_dictionary>, <unique_column_id>, <spark_context>)
+# MAGIC ```
+# MAGIC 
+# MAGIC | variable | data type | required | default value | description |
+# MAGIC | ----------- | ----------- |----------- |----------- |----------- |
+# MAGIC | df | Dataframe | yes | "" | The dataframe to be registed in the metastore|
+# MAGIC | params | Dictionary | yes | "" | The data dictionary containing the configuration parameters [type, table_name, database, delta_location] |
+# MAGIC | unique_column_id | String | yes | "" | The name of the column containing the unique identifier - used for merge capabilities |
+# MAGIC | spark_context | SC | yes | "" | A reference to the spark context in scope. In most cases `spark` |
+# MAGIC 
+# MAGIC Example:
+# MAGIC 
+# MAGIC ```
+# MAGIC DeltaMgr.create_delta_table(df, c_params, "indexCol", spark)
+# MAGIC ```
