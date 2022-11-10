@@ -489,7 +489,7 @@ DeltaMgr.create_delta_table(properties_df, p_params, "h3index", spark)
 # MAGIC Usage:
 # MAGIC 
 # MAGIC ```python
-# MAGIC DeltaMgr.update_delta_fs(df, <parameter_dictionary>)
+# MAGIC DeltaMgr.update_delta_fs(df:Dataframe, <parameter_dictionary>:dict)
 # MAGIC ```
 # MAGIC 
 # MAGIC | variable | data type | required | default value | description |
@@ -514,7 +514,7 @@ DeltaMgr.create_delta_table(properties_df, p_params, "h3index", spark)
 # MAGIC Usage:
 # MAGIC 
 # MAGIC ```python
-# MAGIC DeltaMgr.create_delta_table(df, <parameter_dictionary>, <unique_column_id>, <spark_context>)
+# MAGIC DeltaMgr.create_delta_table(df:Dataframe, <parameter_dictionary>:dict, <unique_column_id>:String, <spark_context>:sc)
 # MAGIC ```
 # MAGIC 
 # MAGIC | variable | data type | required | default value | description |
