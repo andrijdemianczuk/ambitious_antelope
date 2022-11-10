@@ -67,6 +67,12 @@ print(response.status_code)
 # MAGIC ### Using Databricks Secrets
 # MAGIC 
 # MAGIC Rather than exposing the API key in plain text like we do above, it might be preferred to use a [Databricks secret](https://docs.databricks.com/security/secrets/index.html) instead. This is a much more secure way to store and utilize sensitive parameters while working with code that's versioned with a code repository.
+# MAGIC 
+# MAGIC ```python
+# MAGIC # example of how to invoke dbutils secrets to get  credentials.
+# MAGIC key = dbutils.secrets.get("api-key", "<api-key>")
+# MAGIC host = dbutils.secrets.get("api-host", "<api-host>")
+# MAGIC ```
 
 # COMMAND ----------
 
@@ -287,6 +293,13 @@ display(df)
 
 # MAGIC %md
 # MAGIC ### Build the coordinates dataframe
+# MAGIC 
+# MAGIC The first of two new dataframes we'll be building is for the coordinates data. The reason we want to split this out from the carrier properties data is that we won't always need to return it and by splitting it out we can significantly reduce the dimensionality of data in the payload. Since we have a unique identifier for each row (h3-index in this example) we can always do a late-stage join if we need to recombine the data at any point. Likewise, we'll be doing the inverse for the properties data later on.
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC When we split out our data, we want to pull all of the coordinates data along with the h3-index identifier. We can do this by creating a new dataframe in memory which includes our index as our unique ID.
 
 # COMMAND ----------
 
@@ -298,6 +311,22 @@ display(coordinates_df)
 
 # COMMAND ----------
 
+# MAGIC %md
+# MAGIC ### Renaming columns
+# MAGIC 
+# MAGIC Sometimes we need to rename columns to alleviate stress later on. Certain characters need to be considered when declaring our schema. Specifically in this example we want to get rid of any dashes to support ANSI T-SQL standard. With a simple withColumnRenamed() call we can pass in the name of the old column name and replace it with a new one. This is much easier to do now in memory before we commit the dataframe to disk. It also eliminates the need for escaping special characters when writing our code to support the dataframe schema.
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC <img src="https://www.pngall.com/wp-content/uploads/10/Attention-PNG-Free-Image.png" width=100 />
+# MAGIC <br/>
+# MAGIC 
+# MAGIC ### Best Practice Alert
+# MAGIC Generally speaking it's best practice to rename columns as early as possible in the transformation pipeline.
+
+# COMMAND ----------
+
 #rename potentially damaging column names (e.g., with invalid characters in SQL)
 coordinates_df = coordinates_df.withColumnRenamed("h3-index", "h3index")
 
@@ -305,6 +334,8 @@ coordinates_df = coordinates_df.withColumnRenamed("h3-index", "h3index")
 
 # MAGIC %md
 # MAGIC ### Build the properties dataframe
+# MAGIC 
+# MAGIC Building the properties dataframe will follow pretty much the same outline we used to build out the coordinates dataframe. We're going to make sure that we have all of the fields that we need including some type of unique identifier that will allow us to associate with the coordinates when the time comes.
 
 # COMMAND ----------
 
@@ -316,6 +347,11 @@ display(properties_df)
 
 # COMMAND ----------
 
+# MAGIC %md
+# MAGIC Just like before, we're going to rename the h3-index column to remove the dash which is a dangerous character in T-SQL
+
+# COMMAND ----------
+
 #rename potentially damaging column names (e.g., with invalid characters in SQL)
 properties_df = properties_df.withColumnRenamed("h3-index", "h3index")
 
@@ -323,6 +359,27 @@ properties_df = properties_df.withColumnRenamed("h3-index", "h3index")
 
 # MAGIC %md
 # MAGIC ### Commit the split dataframes to delta tables
+# MAGIC 
+# MAGIC So now that we've created out two derivative dataframes it's time to commit them to Delta. This is generally a 2-step process:
+# MAGIC 1. Write the dataframe to disk as delta files
+# MAGIC 1. Register the table in the metastore, telling it how exactly to build the tables from the underlying files.
+# MAGIC 
+# MAGIC In order to make this process easier, the external file we referenced earlier (DeltaMgr.py) contains all of the code necessary to do this. This is also a good example of Python class that can be re-used in many circumstances. Further below is an explanation of each of the functions and how they behave.
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC #### Step 1: Creating our parameters
+# MAGIC 
+# MAGIC The first thing we need to do is decide on how we're going to name and store our data. A function called `init_props()` was created to handle this task and will be used later when we invoke our other functions to actually do the work.
+# MAGIC 
+# MAGIC Basically, four parameters are set to determine our behaviours.
+# MAGIC 1. A label is the first positional argument to uniquely name any materializations
+# MAGIC 1. A table name is the second positional argument used when we will be defining our table
+# MAGIC 1. A schema/database name is the third positional argument that will tell us where to build the table
+# MAGIC 1. A storage location is the fourth positional argument that tells us where we want to write the delta files
+# MAGIC 
+# MAGIC The four parameters are then serialized and stored in a dictionary object to make it easy to pass between functions. Since we will be creating two different Delta tables, we'll create two of these - one for each table.
 
 # COMMAND ----------
 
@@ -331,14 +388,61 @@ p_params = DeltaMgr.init_props("properties","b_carrier_properties", "ademianczuk
 
 # COMMAND ----------
 
+# MAGIC %md
+# MAGIC #### Step 2: Writing the dataframes to files on disk
+# MAGIC 
+# MAGIC The next task is to call the `update_delta_fs()` function that converts the data in memory from the dataframe to delta files which are stored on disk.
+# MAGIC 1. The first positional argument is a refernce to the dataframe we want to commit
+# MAGIC 1. The second positional argument is a reference to the parameter dictionary we created in the last step
+# MAGIC 
+# MAGIC This function will take the dataframe and commit it with the parameters we decided upon in step 1.
+
+# COMMAND ----------
+
 DeltaMgr.update_delta_fs(coordinates_df, c_params)
 DeltaMgr.update_delta_fs(properties_df, p_params)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC #### Step 3: Registering the Delta Tables
+# MAGIC 
+# MAGIC The last task is to register the Delta tables in the metastore. Although this is a fairly straightforward task, a few things need to be taken into consideration:
+# MAGIC * We need to make sure we've identified some type of unique identifier - that's how we're able to merge data as type 2 slowly changing dimensions
+# MAGIC * We need to still make use of the dataframe since we'll be building a view of the existing dataframe in memory within the function itself
+# MAGIC * We need to pass in the spark context in order to do the work. In most cases this is referred to as `spark`
 
 # COMMAND ----------
 
 #We need to remember to pass the spark context into the function so it can be referenced within
 DeltaMgr.create_delta_table(coordinates_df, c_params, "h3index", spark)
 DeltaMgr.create_delta_table(properties_df, p_params, "h3index", spark)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC 
+# MAGIC If the table(s) don't exist, a new one will be created otherwise the existing ones will either be updated or appended to based on the unique row identifier(s).
+# MAGIC 
+# MAGIC Now we can start interacting with the tables in typical SQL or Python fashion! The only thing left to do is to production-ize the notebook. The notebook above is very verbose as a result of the fact that we are doing data exploration and discovery. Once we've honed the process we no longer have need for many of the more expensive operations. In order to productionize the notebook we can do the following:
+# MAGIC 
+# MAGIC - Remove any un-necessary comment blocks within the code base that are used for development, testing & debugging
+# MAGIC - Remove any printing of dataframes
+# MAGIC - Ensure we're caching dataframes that are re-used in many places without change
+# MAGIC - Any transformations are profiled properly and run in memory before committing dataframes to disk
+# MAGIC - Optimize and z-order tables
+
+# COMMAND ----------
+
+from delta.tables import *
+
+#Optimize (compact small files) the coordinates table
+deltaTable = DeltaTable.forName(spark, "b_carrier_coordinates")
+deltaTable.optimize().executeCompaction()
+
+#Optimize (compact small files) the properties table
+deltaTable = DeltaTable.forName(spark, "b_carrier_properties")
+deltaTable.optimize().executeCompaction()
 
 # COMMAND ----------
 
