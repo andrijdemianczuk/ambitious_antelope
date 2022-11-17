@@ -30,4 +30,14 @@ The high-level steps on how to do this are as follows:
 
 Full details on how to clone a GitHub repo in your Databricks workspace can be found [here](https://docs.databricks.com/repos/git-operations-with-repos.html#clone-a-git-repo--other-common-git-operations)
 ### 2. Configuring and testing external API calls
+
+Getting set up with your own API access is easy and openly available to the public. This demo relies on publically accessible data. The steps to get registered for API access is pretty straightforward:
+
+1. Create and log in to a free account at https://rapidapi.com/
+2. Search for boundaries-io in the seach bar
+3. Subscribe to the basic tier (free) or better
+4. Go to Endpoints -> Carrier Routes -> Query for Carriers Route by Zipcodes
+5. Click 'Test Endpoint'
+6. Under Code Snippets, select '(Python) Requests' from the dropdown
+7. Click 'Copy Code'. We'll use this to replace the code in the notebooks to invoke the call.
 ### 3. Modifying the notebooks to support the payload schema
