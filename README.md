@@ -22,6 +22,12 @@ Root: Used to home the individual components, README and EULA.
 ### 1. Cloning this repo in a Databricks workspace
 Cloning this repo to work with the source code is probably the easiest way to work with it. 
 
+The high-level steps on how to do this are as follows:
+1. Configure the user settings to allow Git Repos
+2. In the Repos section of Databricks, select 'Add Repo'
+3. Use the SSL repo address and check clone checkbox to create a copy of this repo
+4. Experiment!
+
 Full details on how to clone a GitHub repo in your Databricks workspace can be found [here](https://docs.databricks.com/repos/git-operations-with-repos.html#clone-a-git-repo--other-common-git-operations)
 ### 2. Configuring and testing external API calls
 ### 3. Modifying the notebooks to support the payload schema
