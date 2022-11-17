@@ -1,5 +1,5 @@
 # ambitious_antelope
-Ambitious Antelope is a project designed to bootstrap data mining an API endpoint returning JSON data with Apache Spark and Delta Lake
+Ambitious Antelope is a project designed to bootstrap data mining an API endpoint returning JSON data with Apache Spark and Delta Lake. This project is also designed to be a showcase on how to approach notebook-driven coding with a more generalized and abstracted approach commonly used in software engineering and application development.
 
 ## Introduction
 JSON has become the defacto standard for sending plain-text data quickly and seamlessly across networks with pseudo-structure. Although this makes things easy to understand with n-nested structures, it can sometime be difficult to map to a table. In this project we will attempt to do just that. Although this was developed primarily for use in [Databricks](https://www.databricks.com/try-databricks) notebooks, the concepts apply to Jupyter notebooks as well.
