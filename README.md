@@ -62,3 +62,80 @@ p_params = DeltaMgr.init_props("properties","{TABLE_NAME}", "{DB_NAME}", "{DBFS_
 ```
 
 ### 4. DeltaMgr API Reference
+The Delta Manager class has three functions that facilitate use of the object. Once imported, all are available for general purpose.
+
+#### Importing the class for use
+```python
+#Discrete path relative to repo root
+from Projects.Boundaries_IO_Production.DeltaMgr import DeltaMgr
+
+#Or relative to this notebook
+from DeltaMgr import DeltaMgr
+```
+
+Once imported, the `DeltaMgr` object is in scope and available for use.
+
+#### DeltaMgr.InitProps()
+Used to build a collection to hold the delta properties
+
+Usage:
+```
+variable_name = DeltaMgr.init_props("type":String, "table_name":String, "database":String, "delta_location":String)
+```
+
+| variable | data type | required | default value | description |
+| ----------- | ----------- |----------- |----------- |----------- |
+| type | String | no | "default" | A type identifier used when managing several dataframes |
+| table_name | String | no | "default" | The name of the table to be written |
+| database | String | no | "default" | The database name where the table will be created |
+| delta_location | String | no | "/FileStore/Users/tmp" | The path where the delta files will be written |
+
+Example:
+
+```python
+c_params = DeltaMgr.init_props("ipsum","bronze_lorem", "foo", "dbfs:/FileStore/Users/foo/bar/coordinates")
+```
+
+#### DeltaMgr.update_delta_fs(df, params)
+
+Used to write a dataframe to the delta location of choice
+
+Usage:
+
+```python
+DeltaMgr.update_delta_fs(df:Dataframe, <parameter_dictionary>:dict)
+```
+
+| variable | data type | required | default value | description |
+| ----------- | ----------- |----------- |----------- |----------- |
+| df | Dataframe | yes | "" | The dataframe to be written to the delta file system |
+| params | Dictionary | yes | "" | The data dictionary containing the configuration parameters [type, table_name, database, delta_location] |
+
+Example:
+
+```python
+DeltaMgr.update_delta_fs(df, c_params)
+```
+
+#### DeltaMgr.create_delta_table(df, params, match_col, spark)
+
+Used to register a Delta location as a Delta Table in the current metastore
+
+Usage:
+
+```python
+DeltaMgr.create_delta_table(df:Dataframe, <parameter_dictionary>:dict, <unique_column_id>:String, <spark_context>:sc)
+```
+
+| variable | data type | required | default value | description |
+| ----------- | ----------- |----------- |----------- |----------- |
+| df | Dataframe | yes | "" | The dataframe to be registed in the metastore|
+| params | Dictionary | yes | "" | The data dictionary containing the configuration parameters [type, table_name, database, delta_location] |
+| unique_column_id | String | yes | "" | The name of the column containing the unique identifier - used for merge capabilities |
+| spark_context | SC | yes | "" | A reference to the spark context in scope. In most cases `spark` |
+
+Example:
+
+```
+DeltaMgr.create_delta_table(df, c_params, "indexCol", spark)
+```
