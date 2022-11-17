@@ -60,3 +60,5 @@ Replace the following with the storage location, table names and database of you
 c_params = DeltaMgr.init_props("coordinates","{TABLE_NAME}", "{DB_NAME}", "{DBFS_LOCATION}")
 p_params = DeltaMgr.init_props("properties","{TABLE_NAME}", "{DB_NAME}", "{DBFS_LOCATION}")
 ```
+
+### 4. DeltaMgr API Reference
