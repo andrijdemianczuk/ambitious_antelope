@@ -20,5 +20,8 @@ Root: Used to home the individual components, README and EULA.
 <br/>|--|-- IHS_Production: Used as a pre-production delivery for S&P Global Markit IHS data
 
 ### 1. Cloning this repo in a Databricks workspace
+Cloning this repo to work with the source code is probably the easiest way to work with it. 
+
+Full details on how to clone a GitHub repo in your Databricks workspace can be found [here](https://docs.databricks.com/repos/git-operations-with-repos.html#clone-a-git-repo--other-common-git-operations)
 ### 2. Configuring and testing external API calls
 ### 3. Modifying the notebooks to support the payload schema
