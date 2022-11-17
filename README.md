@@ -41,3 +41,22 @@ Getting set up with your own API access is easy and openly available to the publ
 6. Under Code Snippets, select '(Python) Requests' from the dropdown
 7. Click 'Copy Code'. We'll use this to replace the code in the notebooks to invoke the call.
 ### 3. Modifying the notebooks to support the payload schema
+You can quickly and easily run the notebooks with most of the structure intact, however you will likely need / want to update the following:
+
+Replace the following notebook code with the python request body from step 2.7 (Above)
+```python
+url = "https://vanitysoft-boundaries-io-v1.p.rapidapi.com/rest/v1/public/carrierRoute/zipcode/98122"
+querystring = {"resolution":"8"}
+headers = {
+	"X-RapidAPI-Key": "{REDACTED}",
+	"X-RapidAPI-Host": "vanitysoft-boundaries-io-v1.p.rapidapi.com"
+}
+res
+```
+
+Replace the following with the storage location, table names and database of your choice:
+```python
+#Create Parameters
+c_params = DeltaMgr.init_props("coordinates","b_carrier_coordinates", "ademianczuk", "dbfs:/FileStore/Users/andrij.demianczuk@databricks.com/tmp/CarrierRoutes/data/coordinates")
+p_params = DeltaMgr.init_props("properties","b_carrier_properties", "ademianczuk", "dbfs:/FileStore/Users/andrij.demianczuk@databricks.com/tmp/CarrierRoutes/data/parameters")
+```
