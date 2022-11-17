@@ -49,7 +49,7 @@ querystring = {"resolution":"8"}
 
 #The headers typically include our authentication parameters. In reality, we would likely store these in the Databricks secrets scope rather than storing them in plain sight like this.
 headers = {
-	"X-RapidAPI-Key": "7f9e8c0e92msh2e17bd321b686d2p12ad5djsnf1c096a07ffb",
+	"X-RapidAPI-Key": "{MY_API_KEY}",
 	"X-RapidAPI-Host": "vanitysoft-boundaries-io-v1.p.rapidapi.com"
 }
 
@@ -383,8 +383,8 @@ properties_df = properties_df.withColumnRenamed("h3-index", "h3index")
 
 # COMMAND ----------
 
-c_params = DeltaMgr.init_props("coordinates","b_carrier_coordinates", "ademianczuk", "dbfs:/FileStore/Users/andrij.demianczuk@databricks.com/tmp/CarrierRoutes/data/coordinates")
-p_params = DeltaMgr.init_props("properties","b_carrier_properties", "ademianczuk", "dbfs:/FileStore/Users/andrij.demianczuk@databricks.com/tmp/CarrierRoutes/data/parameters")
+c_params = DeltaMgr.init_props("coordinates","{TABLE_NAME}", "{DB_NAME}", "{DBFS_LOCATION}")
+p_params = DeltaMgr.init_props("properties","{TABLE_NAME}", "{DB_NAME}", "{DBFS_LOCATION}")
 
 # COMMAND ----------
 

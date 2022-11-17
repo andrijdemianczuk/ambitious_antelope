@@ -19,10 +19,14 @@ from DeltaMgr import DeltaMgr
 url = "https://vanitysoft-boundaries-io-v1.p.rapidapi.com/rest/v1/public/carrierRoute/zipcode/98122"
 querystring = {"resolution":"8"}
 headers = {
-	"X-RapidAPI-Key": "7f9e8c0e92msh2e17bd321b686d2p12ad5djsnf1c096a07ffb",
+	"X-RapidAPI-Key": "{MY_API_KEY}",
 	"X-RapidAPI-Host": "vanitysoft-boundaries-io-v1.p.rapidapi.com"
 }
 response = requests.request("GET", url, headers=headers, params=querystring)
+
+# COMMAND ----------
+
+print(response.status_code)
 
 # COMMAND ----------
 
@@ -78,8 +82,8 @@ properties_df = properties_df.withColumnRenamed("h3-index", "h3index")
 # COMMAND ----------
 
 #Create Parameters
-c_params = DeltaMgr.init_props("coordinates","b_carrier_coordinates", "ademianczuk", "dbfs:/FileStore/Users/andrij.demianczuk@databricks.com/tmp/CarrierRoutes/data/coordinates")
-p_params = DeltaMgr.init_props("properties","b_carrier_properties", "ademianczuk", "dbfs:/FileStore/Users/andrij.demianczuk@databricks.com/tmp/CarrierRoutes/data/parameters")
+c_params = DeltaMgr.init_props("coordinates","{TABLE_NAME}", "{DB_NAME}", "{DBFS_LOCATION}")
+p_params = DeltaMgr.init_props("properties","{TABLE_NAME}", "{DB_NAME}", "{DBFS_LOCATION}")
 
 #Update the Delta File System
 DeltaMgr.update_delta_fs(coordinates_df, c_params)
